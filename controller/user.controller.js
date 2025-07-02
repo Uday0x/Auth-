@@ -249,4 +249,61 @@ const loginUser = async(req,res)=>{
 }
 
 
-export { registerUser, verifyUser, loginUser}
+const getMe =async(req,res)=>{
+    try {
+      const user = await User.findById(req.user.id).select("-password") //sarri details dega except passowrd ki
+      console.log(user);
+
+      if(!user){
+        return res.status(400).json({
+          message:"cannot get the user",
+          success:false
+        })
+      }
+
+      return res.status(400).json({
+        success:true,
+        user,
+      })
+    } catch (error) {
+        console.log("error in getMe",error)
+    }
+}
+
+const logout =async(req,res)=>{
+  try {
+      //2 methods to logout 
+      //1)clear the cookie
+
+      res.cookie('token','',{});
+      return res.status(200).json({
+        success:true,
+        message:"user logged out successfully",
+      })
+
+      //2)expire the cokkie Time
+      //the ocde will not execute below this line due to return above
+      res.cookie('token',' ',{
+        expiresIn:new Date()
+      })
+  } catch (error) {
+      return res.status(400).json({
+        success:false,
+        message:"User still loggedin"
+      })
+  }
+
+}
+
+const forgotPassowrd = async(req,res)=>{
+  
+}
+
+
+const resetPassword = async(req,res)=>{
+
+}
+
+
+
+export { registerUser, verifyUser, loginUser, getMe,logout, forgotPassowrd, resetPassword}
