@@ -106,70 +106,70 @@ const registerUser = async (req, res) => {
 };
 
 
-const verifyUser = async(req,res)=>{
-     //get token from URL 
-     //validate
-     //find user based on token
-     //if not
-     //set is verified to true 
-     //remove verificationToken
-     //save
-     //return response 
+const verifyUser = async (req, res) => {
+  //get token from URL 
+  //validate
+  //find user based on token
+  //if not
+  //set is verified to true 
+  //remove verificationToken
+  //save
+  //return response 
 
-     const { token } = req.params;
-     console.log(token);
+  const { token } = req.params;
+  console.log(token);
 
-      //valdiate
-      if(!token){
-        return res.status(402).json({
-          message:"token doesnt exist"
-        })
-      }
-
-
-      try {
-        console.log("verification Started");
-
-        const user = await User.findOne({
-           verificationToken : token
-        });
-
-        // console.log(user);
+  //valdiate
+  if (!token) {
+    return res.status(402).json({
+      message: "token doesnt exist"
+    })
+  }
 
 
-        if(!user){
-          return res.status(404).json({
-            message:"Invalid token"
-          })
-        }
-        
-        user.isVerified = true;
-        user.verificationToken = undefined; //yaad rakna its undeined not Null //In undefined both key value are gone but null only value is gone
-        await user.save();
-        
-       
-       console.log("has the code reached here");
-       console.log(user.isVerified,user.verificationToken);
+  try {
+    console.log("verification Started");
 
-       res.status(400).json({
-          message:"user verfied sucessfully",
-          success:true,
-       });
+    const user = await User.findOne({
+      verificationToken: token
+    });
 
-      } catch (error) {
-         res.status(400).json({
-          message:"user not verffied",
-          error,
-          success : false,
-         })
-      }
+    // console.log(user);
 
-    
+
+    if (!user) {
+      return res.status(404).json({
+        message: "Invalid token"
+      })
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined; //yaad rakna its undeined not Null //In undefined both key value are gone but null only value is gone
+    await user.save();
+
+
+    console.log("has the code reached here");
+    console.log(user.isVerified, user.verificationToken);
+
+    res.status(400).json({
+      message: "user verfied sucessfully",
+      success: true,
+    });
+
+  } catch (error) {
+    res.status(400).json({
+      message: "user not verffied",
+      error,
+      success: false,
+    })
+  }
+
+
 
 }
 
 
-const loginUser = async(req,res)=>{
+const loginUser = async (req, res) => {
 
   //Get the deatils 
   //validate the datails 
@@ -177,133 +177,192 @@ const loginUser = async(req,res)=>{
   //create a session using jwt
 
 
-  const { email , password }= req.body
+  const { email, password } = req.body
 
   //validate
-  if(!email || !password){
+  if (!email || !password) {
     return res.staus(400).josn({
-      message:"All fields are requrired",
+      message: "All fields are requrired",
     })
 
   }
 
-    try {
-      const user =await User.findOne({
-         email
-      })  
+  try {
+    const user = await User.findOne({
+      email
+    })
 
-      if(!user){
-        return res.staus(400).josn({
-          message:"User doesnt exist",
-        });
+    if (!user) {
+      return res.staus(400).josn({
+        message: "User doesnt exist",
+      });
+    }
+
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("has the code reached here?")
+    console.log(isMatch); //will be set as true
+
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid username or password"
+      });
+    }
+
+
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },//user kiase acces ho rha ??scroll up alil idhar hi login mein hi access hoga uska
+      process.env.JWt_SECRET,
+      {
+        expiresIn: "24h"
       }
-
-
-      const isMatch = await bcrypt.compare( password, user.password);
-      console.log("has the code reached here?")
-      console.log(isMatch); //will be set as true
-
-
-      if(!isMatch){
-        return res.status(400).json({
-          message:"Invalid username or password"
-        });
-      }
-
-
-      
-      const token = jwt.sign(
-          { id:user._id , role:user.role },//user kiase acces ho rha ??scroll up alil idhar hi login mein hi access hoga uska
-          process.env.JWt_SECRET,
-          {
-            expiresIn:"24h"
-          }
     )
 
 
-    const cookieoptions ={
-      hhtpOnly:true,
+    const cookieoptions = {
+      hhtpOnly: true,
       secure: true,
-      maxAge:24*60*60*1000
+      maxAge: 24 * 60 * 60 * 1000
     }
 
-    res.cookie("token",token,cookieoptions)
+    res.cookie("token", token, cookieoptions)
 
     res.status(200).json({
-        sucess:true,
-        message:"login succcesful",
-        user:{
-          id:user._id,
-          name:user.name,
-          role:user.role,
-        }
+      sucess: true,
+      message: "login succcesful",
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role,
+      }
     })
 
-    } catch (error) {
-      res.status(201).json({
-        sucess:false,
-        message:"login not sucessful plz try again"
-      })
-    
-  }
-}
-
-
-const getMe =async(req,res)=>{
-    try {
-      const user = await User.findById(req.user.id).select("-password") //sarri details dega except passowrd ki
-      console.log(user);
-
-      if(!user){
-        return res.status(400).json({
-          message:"cannot get the user",
-          success:false
-        })
-      }
-
-      return res.status(400).json({
-        success:true,
-        user,
-      })
-    } catch (error) {
-        console.log("error in getMe",error)
-    }
-}
-
-const logout =async(req,res)=>{
-  try {
-      //2 methods to logout 
-      //1)clear the cookie
-
-      res.cookie('token','',{});
-      return res.status(200).json({
-        success:true,
-        message:"user logged out successfully",
-      })
-
-      //2)expire the cokkie Time
-      //the ocde will not execute below this line due to return above
-      res.cookie('token',' ',{
-        expiresIn:new Date()
-      })
   } catch (error) {
+    res.status(201).json({
+      sucess: false,
+      message: "login not sucessful plz try again"
+    })
+
+  }
+}
+
+
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password") //sarri details dega except passowrd ki
+    console.log(user);
+
+    if (!user) {
       return res.status(400).json({
-        success:false,
-        message:"User still loggedin"
+        message: "cannot get the user",
+        success: false
       })
+    }
+
+    return res.status(400).json({
+      success: true,
+      user,
+    })
+  } catch (error) {
+    console.log("error in getMe", error)
+  }
+}
+
+const logout = async (req, res) => {
+  try {
+    //2 methods to logout 
+    //1)clear the cookie
+
+    res.cookie('token', '', {});
+    return res.status(200).json({
+      success: true,
+      message: "user logged out successfully",
+    })
+
+    //2)expire the cokkie Time
+    //the ocde will not execute below this line due to return above
+    res.cookie('token', ' ', {
+      expiresIn: new Date()
+    })
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "User still loggedin"
+    })
   }
 
 }
 
-const forgotPassowrd = async(req,res)=>{
-  
+const forgotPassowrd = async (req, res) => {
+  try {
+    //get email
+    //finduser based on User
+    //create reset token using crypto and set the rest token time
+    //send mail = designing the url
+
+    const { email } = req.body;
+
+    if (!email) {
+      return res.staus(400).json({
+        message: "user with this email doesnt exist"
+      })
+    }
+
+    const user = await User.findOne({ email })
+
+
+    //creating the token
+    const token = crypto.randomBytes(32).toString("hex")
+    //creating the token using crypto
+    user.resetPassowrdToken = token;
+    user.resetPassowrdExpires = Date.now() + 10 * 60 * 1000
+    await user.save();
+
+
+    //sending mail using tranporter function and designing the URL
+    const transporter = nodemailer.createTransport({
+      host: process.env.MAILTRAP_HOST,
+      port: process.env.MAILTRAP_PORT,
+      secure: false, // true for port 465, false for other ports
+      auth: {
+        user: process.env.MAILTRAP_USERNAME,
+        pass: process.env.MAILTRAP_PASSWORD,
+      },
+    });
+
+
+    const mailOption = {
+      from: process.env.MAILTRAP_SENDEREMAIL,
+      to: user.email,
+      subject: "Rset passowrd token", // Subject line
+      text: `Please click on the following link:
+      ${process.env.BASE_URL}/api/v1/users/resetPassword/${token}
+      `,
+    };
+
+     await transporter.sendMail(mailOption);
+
+     return res.status(200).json({
+      message:"sent the reset password mail",
+      success:true
+     })
+  } catch (error) {
+
+
+    return res.status(400).json({
+      message:"Mail not sent unfortunatly",
+      success:false
+    })
+  }
 }
 
 
-const resetPassword = async(req,res)=>{
+const resetPassword = async (req, res) => {
 
 }
 
 
 
-export { registerUser, verifyUser, loginUser, getMe,logout, forgotPassowrd, resetPassword}
+export { registerUser, verifyUser, loginUser, getMe, logout, forgotPassowrd, resetPassword }
