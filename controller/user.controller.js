@@ -375,7 +375,11 @@ const resetPassword = async (req, res) => {
         }
         
 
-        const user =await User.findOne({resetPassowrdToken : token }) //bcz in model we have written resetpassowrd as key there//necessary to give both key and value //only if both kay and value are same we dont give both
+        const user =await User.findOne({
+          resetPassowrdToken : token,
+          resetPassowrdExpires: { $gt: Date.now()  //we set time for 10 mins
+           }
+       }) //bcz in model we have written resetpassowrd as key there//necessary to give both key and value //only if both kay and value are same we dont give both
 
         if(!user){
           return res.status(400).json({
