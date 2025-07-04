@@ -316,6 +316,7 @@ const forgotPassowrd = async (req, res) => {
     //creating the token
     const token = crypto.randomBytes(32).toString("hex")
     //creating the token using crypto
+    //we can also say this as giving the token to database
     user.resetPassowrdToken = token;
     user.resetPassowrdExpires = Date.now() + 10 * 60 * 1000
     await user.save();
@@ -349,8 +350,6 @@ const forgotPassowrd = async (req, res) => {
       success:true
      })
   } catch (error) {
-
-
     return res.status(400).json({
       message:"Mail not sent unfortunatly",
       success:false
@@ -360,6 +359,58 @@ const forgotPassowrd = async (req, res) => {
 
 
 const resetPassword = async (req, res) => {
+  //get tokenfrom params 
+  //get newpassowrd from body
+  //find user based on token since we have given the token to both user and database
+  //setting the new passowrd to the database
+  //removing both resetpassowrd token and reset passowrd expiry //making it null
+
+    try {
+        const { token } = req.params;
+        if(!token){
+          return res.status(400).json({
+            message:"No valid reset passowrd token",
+            success:false
+          })
+        }
+        
+
+        const user =await User.findOne({resetPassowrdToken : token }) //bcz in model we have written resetpassowrd as key there//necessary to give both key and value //only if both kay and value are same we dont give both
+
+        if(!user){
+          return res.status(400).json({
+            message:"No valid user found based on the token",
+            success:false,
+          })
+        }
+
+        const { newPassword }= req.body;
+
+        if(!newPassword){
+          return res.status(400).json({
+            message:"plz give the new passowrd",
+            success:false,
+          })
+        }
+
+        user.password = newPassword;
+        user.resetPassowrdToken = undefined;
+        user.resetPassowrdExpires = undefined;
+
+        await user.save()
+
+        //sending the response
+        return res.status(200).json({
+          message:"set the new passowrd succesfully",
+          success:true,
+        })
+    } catch (error) {
+       return res.status(404).json({
+        message:"error in setting the new password",
+        success:false,
+       })
+      
+    }
 
 }
 
